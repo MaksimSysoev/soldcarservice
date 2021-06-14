@@ -10,4 +10,4 @@
   Иерархия классов
 ```
 
-![Страница входа](images/diagram.jpg)
+![Страница входа](images/diagram_update.jpg)
