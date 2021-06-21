@@ -12,7 +12,7 @@
   Иерархия классов
 ```
 
-![Иерархия классов](images/diagram_update.jpg)
+![Иерархия классов](images/newdiagram.jpg)
 
 #
 
