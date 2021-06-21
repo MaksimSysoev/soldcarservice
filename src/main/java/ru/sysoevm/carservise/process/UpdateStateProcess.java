@@ -2,41 +2,63 @@ package ru.sysoevm.carservise.process;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import ru.sysoevm.carservise.data.SoldCarServiceDTO;
 import ru.sysoevm.carservise.rule.*;
-import ru.sysoevm.carservise.rule.statechange.ClosedRuleImpl;
-import ru.sysoevm.carservise.rule.statechange.Service1RuleImpl;
-import ru.sysoevm.carservise.rule.statechange.Service2RuleImpl;
-import ru.sysoevm.carservise.rule.statechange.Service3RuleImpl;
-import ru.sysoevm.carservise.service.CarServiceRuleHandler;
+import ru.sysoevm.carservise.rule.statechange.*;
+import ru.sysoevm.carservise.utils.DateUtils;
 
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 @Component
 public class UpdateStateProcess {
 
     @Autowired
-    CarServiceRuleHandler ruleHandler;
+    JdbcTemplate jdbcTemplate;
 
-    // Если надо добавить различные обработчики, например обработчик который заносит запись для саппорта (чтобы обзвонили)
-    //@Autowired
-    //SupportRuleHandler supportRuleHandler;
-
-    @Scheduled(cron = "0 05 16 * * *")
+    @Scheduled(cron = "0 52 15 * * *")
     public void start() {
         List<Rule> rules = new ArrayList<>();
-        rules.add(new Service1RuleImpl());
-        rules.add(new Service2RuleImpl());
-        rules.add(new Service3RuleImpl());
-        rules.add(new ClosedRuleImpl());
+
+        rules.add(new StateChangeRule()
+                .setFrom(DateUtils.generate(Calendar.MONTH, -12))
+                .setTo(DateUtils.generate(Calendar.DAY_OF_YEAR, -10))
+                .setState(CarServiceStateEnum.SERVICE1)
+        );
+
+        rules.add(new StateChangeRule()
+                .setFrom(DateUtils.generate(Calendar.MONTH, -24))
+                .setTo(DateUtils.generate(Calendar.MONTH, -12))
+                .setState(CarServiceStateEnum.SERVICE2)
+        );
+
+        rules.add(new StateChangeRule()
+                .setFrom(DateUtils.generate(Calendar.MONTH, -37))
+                .setTo(DateUtils.generate(Calendar.MONTH, -24))
+                .setState(CarServiceStateEnum.SERVICE3)
+        );
+
+        rules.add(new StateChangeRule()
+                .setTo(DateUtils.generate(Calendar.MONTH, -37))
+                .setState(CarServiceStateEnum.CLOSED)
+        );
+
         update(rules);
     }
 
+
     public void update(List<Rule> rules) {
         for (Rule rule : rules) {
-            ruleHandler.handle(rule);
+            if (rule.validate()) {
+                rule.apply(jdbcTemplate);
+            }
         }
     }
+
+
 }
