@@ -11,6 +11,7 @@ import ru.sysoevm.carservise.rule.statechange.*;
 import ru.sysoevm.carservise.utils.DateUtils;
 
 import java.sql.Date;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -21,44 +22,43 @@ public class UpdateStateProcess {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @Scheduled(cron = "0 52 15 * * *")
+    @Scheduled(cron = "0 14 13 * * *")
     public void start() {
         List<Rule> rules = new ArrayList<>();
-
-        rules.add(new StateChangeRule()
-                .setFrom(DateUtils.generate(Calendar.MONTH, -12))
-                .setTo(DateUtils.generate(Calendar.DAY_OF_YEAR, -10))
-                .setState(CarServiceStateEnum.SERVICE1)
-        );
-
-        rules.add(new StateChangeRule()
-                .setFrom(DateUtils.generate(Calendar.MONTH, -24))
-                .setTo(DateUtils.generate(Calendar.MONTH, -12))
-                .setState(CarServiceStateEnum.SERVICE2)
-        );
-
-        rules.add(new StateChangeRule()
-                .setFrom(DateUtils.generate(Calendar.MONTH, -37))
-                .setTo(DateUtils.generate(Calendar.MONTH, -24))
-                .setState(CarServiceStateEnum.SERVICE3)
-        );
-
-        rules.add(new StateChangeRule()
-                .setTo(DateUtils.generate(Calendar.MONTH, -37))
-                .setState(CarServiceStateEnum.CLOSED)
-        );
-
+        rules.add(new Service1Rule());
+        rules.add(new Service2Rule());
+        rules.add(new Service3Rule());
+        rules.add(new ClosedRule());
         update(rules);
     }
 
 
     public void update(List<Rule> rules) {
-        for (Rule rule : rules) {
-            if (rule.validate()) {
-                rule.apply(jdbcTemplate);
+
+        List<Object[]> errorParams = new ArrayList<>();
+        Date now = DateUtils.now();
+
+        try {
+            for (Rule rule : rules) {
+                if (rule.validate()) {
+                    rule.apply(jdbcTemplate);
+                }
+            }
+        } catch (Exception e) {
+            errorParams.add(new Object[] {now, e.getMessage()});
+        }
+
+        if (errorParams.size() > 0) {
+            String insertErrorsQuery = "INSERT INTO error_log VALUES(?, ?)";
+            try {
+                jdbcTemplate.batchUpdate(insertErrorsQuery, errorParams, new int[] {Types.DATE, Types.VARCHAR});
+            } catch (Exception e) {
+
             }
         }
-    }
 
+
+
+    }
 
 }

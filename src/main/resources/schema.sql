@@ -1,4 +1,4 @@
-
+/*
 create table if not exists sold_car_service as
 select
     id,
@@ -17,7 +17,7 @@ order by purchase_datetime;
 alter table sold_car_service add primary key (id);
 alter table sold_car_service add service_state varchar(255) default 'NEW';
 alter table sold_car_service ADD FOREIGN KEY (car_model_id) references products(id) ON DELETE CASCADE;
-
+*/
 
 CREATE TABLE IF NOT EXISTS error_log
 (
